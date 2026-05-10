@@ -4,10 +4,8 @@ import torch
 import torch.nn.functional as F
 import os
 
-import faiss
-
 MODEL_PATH = "./models/clip-vit-base-patch32"
-IMAGE_FOLDER = "./data/"
+IMAGE_FOLDER = "./test_data/"
 
 model = CLIPModel.from_pretrained(MODEL_PATH)
 processor = CLIPProcessor.from_pretrained(MODEL_PATH)

@@ -6,37 +6,13 @@ import os
 import numpy as np
 import faiss
 
-index = faiss.IndexFlatL2(512)
-
 MODEL_PATH = "./models/clip-vit-base-patch32"
-IMAGE_FOLDER = "./test_data/"
 
 model = CLIPModel.from_pretrained(MODEL_PATH)
 processor = CLIPProcessor.from_pretrained(MODEL_PATH)
 
-def get_image_embeddings(image_path,model,processor):
-    image_data = {}
-    image = Image.open(image_path)
-    inputs = processor(images=image, return_tensors="pt", padding=True)
-    with torch.no_grad():
-        features = model.get_image_features(pixel_values=inputs['pixel_values'])
-    features = F.normalize(features, p=2, dim=-1)
-
-    image_data['image_path'] = image_path
-    image_data['image_embeddings'] = features
-
-    index.add(features.numpy())
-
-    return image_data
-
-def get_image_embeddings_from_folder(folder_path, model, processor):
-    image_data_list = []
-    for filename in os.listdir(folder_path):
-        if filename.endswith(('.png', '.jpg', '.jpeg')):
-            image_path = os.path.join(folder_path, filename)
-            image_data = get_image_embeddings(image_path, model, processor)
-            image_data_list.append(image_data)
-    return image_data_list
+def load_index():
+    return faiss.read_index("db/gallery.index")
 
 def get_text_embedding(text, model, processor):
     text_data = {}
@@ -47,38 +23,14 @@ def get_text_embedding(text, model, processor):
     text_data['text_embeddings'] = features
     return text_data
 
+def calculate_similarity(text_embedding, index):
+    indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), 30)[-1][0] if i != -1]  
+    return indexes
 
-image_embeddings = get_image_embeddings_from_folder(IMAGE_FOLDER, model, processor)
-query = input("Search : ")
-text_embedding = get_text_embedding(query.lower(), model, processor)
+if __name__ == '__main__':
+    query = input("Search : ")
 
-# Calculate similarity between text and all images
-def calculate_similarity(text_embedding, image_embeddings):
-    print(text_embedding['text_embeddings'].shape," ",image_embeddings[0]['image_embeddings'].shape)
-    similarities = []
-    for image_embedding in image_embeddings:
-        similarity = torch.matmul(text_embedding['text_embeddings'], image_embedding['image_embeddings'].T)
-        similarities.append({
-            'image_path': image_embedding['image_path'],
-            'similarity': similarity.item()
-        })
-    return similarities
-
-similarities = calculate_similarity(text_embedding, image_embeddings)
-
-# Sort by similarity
-similarities.sort(key=lambda x: x['similarity'], reverse=True)
-
-print(similarities)
-
-
-def save_index(index, filename):
-    faiss.write_index(index, filename)
-
-save_index(index, "db/gallery.index")
-
-print("-----------")
-
-indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), 30)[-1][0] if i != -1]  
-print(indexes)
-# print(index.search(text_embedding['text_embeddings'].detach().numpy(), 10))
+    index = load_index()
+    text_embedding = get_text_embedding(query.lower(), model, processor)
+    indexes = calculate_similarity(text_embedding, index)
+    print(indexes)

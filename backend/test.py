@@ -3,6 +3,10 @@ from transformers import CLIPProcessor, CLIPModel
 import torch
 import torch.nn.functional as F
 import os
+import numpy as np
+import faiss
+
+index = faiss.IndexFlatL2(512)
 
 MODEL_PATH = "./models/clip-vit-base-patch32"
 IMAGE_FOLDER = "./test_data/"
@@ -20,6 +24,8 @@ def get_image_embeddings(image_path,model,processor):
 
     image_data['image_path'] = image_path
     image_data['image_embeddings'] = features
+
+    index.add(features.numpy())
 
     return image_data
 
@@ -64,3 +70,15 @@ similarities = calculate_similarity(text_embedding, image_embeddings)
 similarities.sort(key=lambda x: x['similarity'], reverse=True)
 
 print(similarities)
+
+
+def save_index(index, filename):
+    faiss.write_index(index, filename)
+
+save_index(index, "db/gallery.index")
+
+print("-----------")
+
+indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), 30)[-1][0] if i != -1]  
+print(indexes)
+# print(index.search(text_embedding['text_embeddings'].detach().numpy(), 10))

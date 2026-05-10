@@ -1,40 +1,32 @@
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
 import torch
+import torch.nn.functional as F
+import os
 
-# Local model path
 MODEL_PATH = "./models/clip-vit-base-patch32"
+# IMAGE_FOLDER = "./data/"
 
-# Load model
 model = CLIPModel.from_pretrained(MODEL_PATH)
 
-# Load processor
 processor = CLIPProcessor.from_pretrained(MODEL_PATH)
 
-# Load image
-image = Image.open("data/f.jpeg")
-# Text prompts
-texts = [
-    "cat sitting infront of window",
-    "dog in red color"
-]
+filename = "data/c.jpg"
 
-# Convert image + text into tensors
-inputs = processor(
-    text=texts,
-    images=image,
-    return_tensors="pt",
-    padding=True
-)
+image = Image.open(filename)
 
-# Disable gradient calculation
+inputs = processor(images=image, return_tensors="pt", padding=True)
+
+# print(inputs)
+
+# features = model.get_image_features(pixel_values=inputs['pixel_values'],return_tensors="pt")
+
+# print(features)
+
+
 with torch.no_grad():
-    outputs = model(**inputs)
+    features = model.get_image_features(pixel_values=inputs['pixel_values'])
 
-# Similarity scores
-logits_per_image = outputs.logits_per_image
+features = F.normalize(features.last_hidden_state, p=2, dim=-1)
 
-# Convert to probabilities
-probs = logits_per_image.softmax(dim=1)
-
-print(probs)
+print(features)

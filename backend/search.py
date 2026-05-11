@@ -23,7 +23,7 @@ def get_text_embedding(text, model, processor):
     text_data['text_embeddings'] = features
     return text_data
 
-def calculate_similarity(text_embedding, index):
+def get_index(text_embedding, index):
     indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), 30)[-1][0] if i != -1]  
     return indexes
 
@@ -32,5 +32,5 @@ if __name__ == '__main__':
 
     index = load_index()
     text_embedding = get_text_embedding(query.lower(), model, processor)
-    indexes = calculate_similarity(text_embedding, index)
+    indexes = get_index(text_embedding, index)
     print(indexes)

@@ -36,6 +36,11 @@ def get_image_embeddings_from_folder(folder_path, model, processor):
 def save_index(index, filename):
     faiss.write_index(index, filename)
 
+def add_single_image(image_path, index):
+    image_data = get_image_embeddings(image_path, model, processor)
+    index.add(image_data['image_embeddings'].detach().numpy())
+    save_index(index, "db/gallery.index")
+
 if __name__ == '__main__':
     get_image_embeddings_from_folder(IMAGE_FOLDER, model, processor)
     save_index(index, "db/gallery.index")

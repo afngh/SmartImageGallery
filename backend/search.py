@@ -23,8 +23,8 @@ def get_text_embedding(text, model, processor):
     text_data['text_embeddings'] = features
     return text_data
 
-def get_index(text_embedding, index):
-    indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), 30)[-1][0] if i != -1]  
+def get_index(text_embedding, index, limit=30):
+    indexes = [int(i) for i in index.search(text_embedding['text_embeddings'].detach().numpy(), limit)[-1][0] if i != -1]  
     return indexes
 
 if __name__ == '__main__':

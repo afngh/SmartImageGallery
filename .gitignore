@@ -1,2 +1,4 @@
 backend/models/clip-vit-base-patch32/pytorch_model.bin
 backend/venv
+backend/__pycache__
+backend/apis/__pycache__

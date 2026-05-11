@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Semantic Search</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --border: rgba(0, 0, 0, 0.1);
+      --border-hover: rgba(0, 0, 0, 0.22);
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-hint: #999;
+      --accent: #7F77DD;
+      --accent-light: #EEEDFE;
+      --accent-dark: #534AB7;
+      --danger-bg: #FCEBEB;
+      --danger: #A32D2D;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      height: 56px;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--accent-light);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg {
+      color: var(--accent);
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .hero p {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .search-wrap {
+      background: var(--surface);
+      border: 0.5px solid var(--border-hover);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 6px 6px 14px;
+      margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .search-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(127, 119, 221, 0.12);
+    }
+
+    .search-wrap svg {
+      flex-shrink: 0;
+      color: var(--text-hint);
+    }
+
+    #query {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    #query::placeholder {
+      color: var(--text-hint);
+    }
+
+    #clear-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-hint);
+      padding: 4px;
+      line-height: 0;
+      border-radius: 6px;
+      display: none;
+    }
+
+    #clear-btn:hover {
+      color: var(--text-muted);
+      background: var(--bg);
+    }
+
+    #search-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: var(--radius);
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    #search-btn:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    #search-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    #search-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .chip {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 99px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--text-hint);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .meta em {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    #error-box {
+      background: var(--danger-bg);
+      border: 0.5px solid rgba(163, 45, 45, 0.3);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--danger);
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .spinner-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(0, 0, 0, 0.1);
+      border-top-color: var(--accent);
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .img-card {
+      aspect-ratio: 1;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #efefef;
+      border: 0.5px solid var(--border);
+      position: relative;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .img-card img.loaded {
+      opacity: 1;
+    }
+
+    .img-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 0;
+      color: var(--text-hint);
+    }
+
+    .empty-state svg {
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+    }
+
+    .empty-state small {
+      font-size: 13px;
+      display: block;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    </div>
+    <h1>Semantic Search</h1>
+  </header>
+
+  <main>
+    <div class="hero">
+      <p>Describe what you're looking for in natural language</p>
+    </div>
+
+    <div class="search-wrap">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input id="query" type="text" placeholder="e.g. sunset over ocean, smiling dog, red sports car…"
+        autocomplete="off" />
+      <button id="clear-btn" aria-label="Clear">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+      <button id="search-btn" disabled>Search</button>
+    </div>
+
+    <div class="chips" id="chips">
+      <button class="chip">golden hour landscape</button>
+      <button class="chip">minimalist interior</button>
+      <button class="chip">street food market</button>
+      <button class="chip">abstract geometry</button>
+      <button class="chip">mountain trail fog</button>
+    </div>
+
+    <div id="error-box"></div>
+
+    <div id="spinner" class="spinner-wrap" style="display:none">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="meta" class="meta" style="display:none"></div>
+    <div id="grid"></div>
+    <div id="empty" class="empty-state" style="display:none">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+      <p>No images found</p>
+      <small>Try different keywords or a broader description</small>
+    </div>
+  </main>
+
+  <script>
+    const API = 'http://127.0.0.1:8000/search?prompt=';
+    const queryEl = document.getElementById('query');
+    const searchBtn = document.getElementById('search-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const grid = document.getElementById('grid');
+    const spinner = document.getElementById('spinner');
+    const errorBox = document.getElementById('error-box');
+    const metaEl = document.getElementById('meta');
+    const emptyEl = document.getElementById('empty');
+    const chips = document.getElementById('chips');
+
+    let currentQuery = '';
+
+    queryEl.addEventListener('input', () => {
+      const val = queryEl.value.trim();
+      searchBtn.disabled = !val;
+      clearBtn.style.display = val ? 'block' : 'none';
+    });
+
+    queryEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && queryEl.value.trim()) doSearch();
+    });
+
+    searchBtn.addEventListener('click', doSearch);
+
+    clearBtn.addEventListener('click', () => {
+      queryEl.value = '';
+      clearBtn.style.display = 'none';
+      searchBtn.disabled = true;
+      grid.innerHTML = '';
+      metaEl.style.display = 'none';
+      errorBox.style.display = 'none';
+      emptyEl.style.display = 'none';
+      chips.style.display = 'flex';
+      queryEl.focus();
+    });
+
+    chips.addEventListener('click', e => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      queryEl.value = chip.textContent;
+      clearBtn.style.display = 'block';
+      searchBtn.disabled = false;
+      doSearch();
+    });
+
+    async function doSearch() {
+      const q = queryEl.value.trim();
+      if (!q) return;
+      currentQuery = q;
+
+      chips.style.display = 'none';
+      grid.innerHTML = '';
+      emptyEl.style.display = 'none';
+      errorBox.style.display = 'none';
+      metaEl.style.display = 'none';
+      spinner.style.display = 'flex';
+      searchBtn.disabled = true;
+      searchBtn.textContent = 'Searching…';
+
+      try {
+        const res = await fetch(`${API}/search?prompt=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        const data = await res.json();
+        const images = data.images || [];
+
+        spinner.style.display = 'none';
+        metaEl.style.display = 'flex';
+        metaEl.innerHTML = `<span>${images.length} result${images.length !== 1 ? 's' : ''} for <em>"${escHtml(q)}"</em></span>`;
+
+        if (images.length === 0) {
+          emptyEl.style.display = 'block';
+        } else {
+          images.forEach((src, i) => {
+            const card = document.createElement('div');
+            card.className = 'img-card';
+            card.style.animationDelay = `${Math.min(i * 35, 380)}ms`;
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'img-placeholder';
+            placeholder.innerHTML = `<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+
+            const img = document.createElement('img');
+            img.alt = `Result ${i + 1}`;
+            img.src = src;
+            img.onload = () => { img.classList.add('loaded'); placeholder.style.display = 'none'; };
+            img.onerror = () => { placeholder.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>`; };
+
+            card.appendChild(placeholder);
+            card.appendChild(img);
+            grid.appendChild(card);
+          });
+        }
+      } catch (err) {
+        spinner.style.display = 'none';
+        errorBox.style.display = 'block';
+        errorBox.innerHTML = `<strong>Error:</strong> ${escHtml(err.message)}. Is your API running at <code>http://127.0.0.1:8000</code>?`;
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = 'Search';
+      }
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+
+</html>

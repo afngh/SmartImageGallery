@@ -1,0 +1,33 @@
+name: Automated Code Formatter
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  format-and-commit:
+    runs-on: ubuntu-latest
+
+    # Crucial: Grants the action token permission to push changes
+    permissions:
+      contents: write
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          # persist-credentials must be true to use the token for pushing
+          persist-credentials: true 
+
+      # Step 2: Make your automated changes here (Example: Creating/updating a file)
+      - name: Generate Automated Changes
+        run: |
+          echo "Last automated build: $(date)" > build-log.txt
+
+      # Step 3: Automatically commit and push changed files
+      - name: Auto-commit Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: automated file update [skip ci]"
+          file_pattern: "build-log.txt" # Omit this line to commit all changed files
